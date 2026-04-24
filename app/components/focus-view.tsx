@@ -143,7 +143,7 @@ export function FocusView({ runner, onBack, elapsed }: {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f5f1e8' }}>
       {/* Dark top bar */}
       <div style={{
-        paddingTop: 'calc(54px + env(safe-area-inset-top, 0px))',
+        paddingTop: 16,
         paddingBottom: 14, paddingLeft: 16, paddingRight: 16,
         background: '#1a1816', color: '#f5f1e8',
         display: 'flex', alignItems: 'center', gap: 12,

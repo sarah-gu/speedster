@@ -161,7 +161,7 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f5f1e8' }}>
       {/* Dark top header */}
       <div style={{
-        paddingTop: 'calc(66px + env(safe-area-inset-top, 0px))',
+        paddingTop: 20,
         paddingBottom: preRace ? 14 : 8,
         paddingLeft: 20, paddingRight: 20,
         background: '#1a1816', color: '#f5f1e8',
