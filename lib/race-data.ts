@@ -229,6 +229,30 @@ export const CREW: RunnerConfig[] = [
     hype: "CRUISING",
     gap: 0,
   },
+  {
+    id: "kevin",
+    bib: 44315,
+    color: "#d4562a",
+    corral: "Wave D",
+    hype: "SENDING",
+    gap: 0,
+  },
+  {
+    id: "jess",
+    bib: 44316,
+    color: "#b84428",
+    corral: "Wave D",
+    hype: "DIALED IN",
+    gap: 0,
+  },
+  {
+    id: "animesh",
+    bib: 8444,
+    color: "#7a3618",
+    corral: "Wave A",
+    hype: "GOING",
+    gap: 0,
+  },
 ];
 
 export function configToRunner(
