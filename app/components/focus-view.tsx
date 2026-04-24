@@ -7,6 +7,7 @@ import {
   LANDMARKS,
   nextLandmarkPass,
   etaSecondsToMile,
+  parsePaceSec,
 } from '@/lib/race-data';
 import { FF, LiveDot, TickNumber, HypeBadge, RaceStripe, formatEta, Confetti } from './race-shared';
 import { ElevationFull } from './race-elevation';
@@ -63,8 +64,11 @@ function SplitRow({ s, prevPace, accent }: {
   prevPace?: string;
   accent: string;
 }) {
-  const faster = prevPace !== undefined && s.pace < prevPace;
-  const slower = prevPace !== undefined && s.pace > prevPace;
+  const cur = parsePaceSec(s.pace);
+  const prev = prevPace !== undefined ? parsePaceSec(prevPace) : NaN;
+  const comparable = isFinite(cur) && isFinite(prev);
+  const faster = comparable && cur < prev;
+  const slower = comparable && cur > prev;
   return (
     <div style={{
       display: 'flex', alignItems: 'center', padding: '10px 20px',

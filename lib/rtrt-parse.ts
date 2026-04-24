@@ -3,6 +3,9 @@ import { type Runner, type Split } from './race-data';
 export function parseMileFromLabel(label: string): number | null {
   const mileMatch = label.match(/Mile\s+(\d+(?:\.\d+)?)/i);
   if (mileMatch) return parseFloat(mileMatch[1]);
+  // Embedded mile hint, e.g. "5K/3.1mi" or "3.1 mi" or "13.1mi"
+  const miMatch = label.match(/(\d+(?:\.\d+)?)\s*mi\b/i);
+  if (miMatch) return parseFloat(miMatch[1]);
   if (/finish/i.test(label)) return 13.1;
   const kmMatch = label.match(/^(\d+(?:\.\d+)?)\s*[Kk]$/);
   if (kmMatch) return Math.round(parseFloat(kmMatch[1]) * 0.621371 * 10) / 10;

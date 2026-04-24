@@ -62,6 +62,12 @@ function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen }: {
   return (
     <div
       onClick={() => onOpen(runner)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(runner);
+        }
+      }}
       role="button"
       tabIndex={0}
       style={{
@@ -135,13 +141,13 @@ function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen }: {
   );
 }
 
-export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed, confettiFor }: {
+export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed, confettiBursts }: {
   runners: Runner[];
   unstarred: Set<string>;
   onToggleStar: (id: string) => void;
   onOpen: (r: Runner) => void;
   elapsed: string;
-  confettiFor: string | null;
+  confettiBursts: { key: number; id: string }[];
 }) {
   const visible = runners.filter(r => !unstarred.has(r.id));
   const hidden = runners.filter(r => unstarred.has(r.id));
@@ -226,12 +232,12 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed
       {/* Global elevation graph */}
       <div style={{ position: 'relative' }}>
         <GlobalElevation runners={visible} />
-        {confettiFor && (() => {
-          const r = visible.find(x => x.id === confettiFor);
+        {confettiBursts.map(b => {
+          const r = visible.find(x => x.id === b.id);
           if (!r) return null;
           const { x, y } = pointAtMile(r.mile, 362, 160, 32);
-          return <Confetti x={16 + x} y={48 + y} accent={r.color} />;
-        })()}
+          return <Confetti key={b.key} x={16 + x} y={48 + y} accent={r.color} />;
+        })}
       </div>
 
       {/* Section label */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { buildElevationPath, pointAtMile, type Runner } from '@/lib/race-data';
 import { FF } from './race-shared';
 
@@ -18,8 +18,11 @@ export function GlobalElevation({ runners, width = 362, height = 160 }: {
 }) {
   const padY = 32;
   const { d } = useMemo(() => buildElevationPath(width, height, padY), [width, height]);
+  const uid = useId();
+  const fillId = `global-fill-${uid}`;
+  const clipId = `global-clip-${uid}`;
 
-  const leadMile = Math.max(...runners.map(r => r.mile));
+  const leadMile = runners.length ? Math.max(...runners.map(r => r.mile)) : 0;
   const leadX = (leadMile / 13.1) * width;
 
   // Label layout with collision avoidance
@@ -83,12 +86,12 @@ export function GlobalElevation({ runners, width = 362, height = 160 }: {
         aria-label={runners.map(r => `${r.name} at mile ${r.mile.toFixed(1)}`).join(', ')}
       >
         <defs>
-          <linearGradient id="global-fill" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="#f5f1e8" stopOpacity="0.18" />
             <stop offset="100%" stopColor="#f5f1e8" stopOpacity="0" />
           </linearGradient>
-          <clipPath id="global-clip">
-            <rect x="0" y="0" width={leadX} height={height} />
+          <clipPath id={clipId}>
+            <rect x="0" y="0" width={Math.max(0, leadX)} height={height} />
           </clipPath>
         </defs>
 
@@ -106,8 +109,8 @@ export function GlobalElevation({ runners, width = 362, height = 160 }: {
         <path d={d} stroke="#f5f1e8" strokeOpacity="0.28" strokeWidth="1.5" fill="none" strokeLinecap="round" />
 
         {/* Traveled region — brighter stroke + gradient fill */}
-        <g clipPath="url(#global-clip)">
-          <path d={`${d} L ${width} ${height} L 0 ${height} Z`} fill="url(#global-fill)" />
+        <g clipPath={`url(#${clipId})`}>
+          <path d={`${d} L ${width} ${height} L 0 ${height} Z`} fill={`url(#${fillId})`} />
           <path d={d} stroke="#f5f1e8" strokeOpacity="0.7" strokeWidth="1.8" fill="none" strokeLinecap="round" />
         </g>
 
@@ -174,6 +177,9 @@ export function ElevationFull({ mile, color, width = 354, height = 150 }: {
   const padY = 18;
   const { d } = useMemo(() => buildElevationPath(width, height, padY), [width, height]);
   const { x, y } = pointAtMile(mile, width, height, padY);
+  const uid = useId();
+  const fillId = `elev-fill-${uid}`;
+  const clipId = `elev-clip-${uid}`;
 
   return (
     <svg
@@ -184,12 +190,12 @@ export function ElevationFull({ mile, color, width = 354, height = 150 }: {
       aria-label={`Elevation profile, runner at mile ${mile.toFixed(1)}`}
     >
       <defs>
-        <linearGradient id="elev-fill" x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.25" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
-        <clipPath id="elev-clip">
-          <rect x="0" y="0" width={x} height={height} />
+        <clipPath id={clipId}>
+          <rect x="0" y="0" width={Math.max(0, x)} height={height} />
         </clipPath>
       </defs>
 
@@ -205,8 +211,8 @@ export function ElevationFull({ mile, color, width = 354, height = 150 }: {
       <path d={d} stroke="#1a1816" strokeOpacity="0.2" strokeWidth="1.5" fill="none" strokeLinecap="round" />
 
       {/* Traveled fill + stroke */}
-      <g clipPath="url(#elev-clip)">
-        <path d={`${d} L ${width} ${height} L 0 ${height} Z`} fill="url(#elev-fill)" />
+      <g clipPath={`url(#${clipId})`}>
+        <path d={`${d} L ${width} ${height} L 0 ${height} Z`} fill={`url(#${fillId})`} />
         <path d={d} stroke={color} strokeWidth="2.5" fill="none" strokeLinecap="round" />
       </g>
 

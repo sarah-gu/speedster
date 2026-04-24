@@ -11,7 +11,8 @@ export function RaceApp() {
   const [runners, setRunners] = useState<Runner[]>(INITIAL_RUNNERS);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [confettiFor, setConfettiFor] = useState<string | null>(null);
+  const [confettiBursts, setConfettiBursts] = useState<{ key: number; id: string }[]>([]);
+  const burstIdRef = useRef(0);
   const [unstarred, setUnstarred] = useState<Set<string>>(new Set());
   const prevRunnersRef = useRef<Runner[]>(INITIAL_RUNNERS);
 
@@ -62,10 +63,11 @@ export function RaceApp() {
         data.runners.forEach((r) => {
           const prevRunner = prev.find((p) => p.id === r.id);
           if (prevRunner && Math.floor(r.mile) > Math.floor(prevRunner.mile)) {
+            const key = ++burstIdRef.current;
+            setConfettiBursts(b => [...b, { key, id: r.id }]);
             setTimeout(() => {
-              setConfettiFor(r.id);
-              setTimeout(() => setConfettiFor(null), 1400);
-            }, 50);
+              setConfettiBursts(b => b.filter(x => x.key !== key));
+            }, 1400);
           }
         });
 
@@ -97,7 +99,7 @@ export function RaceApp() {
           onToggleStar={toggleStar}
           onOpen={r => setFocusId(r.id)}
           elapsed={elapsed}
-          confettiFor={confettiFor}
+          confettiBursts={confettiBursts}
         />
       </div>
 

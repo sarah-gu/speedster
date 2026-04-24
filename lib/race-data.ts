@@ -77,13 +77,14 @@ export function buildElevationPath(w: number, h: number, padY = 8) {
 export function pointAtMile(mile: number, w: number, h: number, padY = 8) {
   const maxMile = 13.1;
   const maxEl = 170;
+  const m = Math.max(0, Math.min(maxMile, mile));
   let i = 0;
-  while (i < COURSE.length - 1 && COURSE[i + 1][0] < mile) i++;
+  while (i < COURSE.length - 1 && COURSE[i + 1][0] < m) i++;
   const [m0, e0] = COURSE[i];
   const [m1, e1] = COURSE[Math.min(i + 1, COURSE.length - 1)];
-  const t = m1 === m0 ? 0 : (mile - m0) / (m1 - m0);
+  const t = m1 === m0 ? 0 : (m - m0) / (m1 - m0);
   const el = e0 + (e1 - e0) * t;
-  const x = (mile / maxMile) * w;
+  const x = (m / maxMile) * w;
   const y = h - padY - (el / maxEl) * (h - padY * 2);
   return { x, y, el };
 }
@@ -123,11 +124,12 @@ export const COURSE_GEO: [number, number, number][] = [
 ];
 
 export function pointAtMileGeo(mile: number): { x: number; y: number } {
+  const m = Math.max(0, Math.min(13.1, mile));
   let i = 0;
-  while (i < COURSE_GEO.length - 1 && COURSE_GEO[i + 1][0] < mile) i++;
+  while (i < COURSE_GEO.length - 1 && COURSE_GEO[i + 1][0] < m) i++;
   const [m0, x0, y0] = COURSE_GEO[i];
   const [m1, x1, y1] = COURSE_GEO[Math.min(i + 1, COURSE_GEO.length - 1)];
-  const t = m1 === m0 ? 0 : (mile - m0) / (m1 - m0);
+  const t = m1 === m0 ? 0 : (m - m0) / (m1 - m0);
   return { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t };
 }
 
