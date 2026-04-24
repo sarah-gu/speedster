@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1a1816;
+  --paper: #f5f1e8;
+  --paper-raise: #fbf7ee;
+  --paper-bg: #f0ece4;
+  --accent: #e76f3c;
+}
+
+@keyframes rd-pulse {
+  0% { box-shadow: 0 0 0 0 var(--accent); opacity: 0.75; transform: scale(1); }
+  70% { box-shadow: 0 0 0 10px transparent; opacity: 0; transform: scale(1.6); }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0; transform: scale(1); }
+}
+
+@keyframes rd-confetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+@keyframes rd-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.phone-frame {
+  height: 100%;
+}
+
+@media (min-width: 600px) {
+  .page-shell {
+    padding: 28px 0;
+  }
+  .phone-frame {
+    height: min(88vh, 860px);
+    border-radius: 44px;
+    box-shadow:
+      0 0 0 1px rgba(26,24,22,0.10),
+      0 24px 60px rgba(26,24,22,0.22),
+      0 4px 12px rgba(26,24,22,0.10);
+    overflow: hidden;
+  }
+}
+
+body {
+  background: var(--paper-bg);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  transition: transform 120ms ease;
+}
+
+button:active {
+  transform: scale(0.985);
+}
