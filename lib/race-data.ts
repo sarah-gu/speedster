@@ -168,6 +168,19 @@ export function etaSecondsToMile(currentMile: number, targetMile: number, pace: 
 // April 26 2026 07:00 AM EDT (UTC-4) — NYCRUNS Brooklyn Experience Half Marathon gun time
 export const RACE_START_EPOCH = 1777201200;
 
+// Per-wave gun times, expressed as seconds offset from RACE_START_EPOCH (Wave A = 7:00 AM).
+export const WAVE_OFFSETS: Record<string, number> = {
+  "Wave A": 0,
+  "Wave C": 80 * 60,
+  "Wave D": 120 * 60,
+};
+
+export const WAVE_LABELS: Record<string, string> = {
+  "Wave A": "7:00 AM",
+  "Wave C": "8:20 AM",
+  "Wave D": "9:00 AM",
+};
+
 export function parsePaceSec(pace: string) {
   const [m, s] = pace.split(":").map(Number);
   return m * 60 + s;
@@ -219,7 +232,7 @@ export const CREW: RunnerConfig[] = [
     id: "janet",
     bib: 42191,
     color: "#8a4a22",
-    corral: "Wave C",
+    corral: "Wave D",
     hype: "LOCKED IN",
     gap: 0,
   },
@@ -251,8 +264,32 @@ export const CREW: RunnerConfig[] = [
     id: "animesh",
     bib: 8444,
     color: "#7a3618",
-    corral: "Wave A",
+    corral: "Wave D",
     hype: "GOING",
+    gap: 0,
+  },
+  {
+    id: "lucas",
+    bib: 14816,
+    color: "#9c4220",
+    corral: "Wave A",
+    hype: "DIALED IN",
+    gap: 0,
+  },
+  {
+    id: "angeline",
+    bib: 12696,
+    color: "#cc5a2e",
+    corral: "Wave A",
+    hype: "CRUISING",
+    gap: 0,
+  },
+  {
+    id: "evan",
+    bib: 35669,
+    color: "#6e3a1c",
+    corral: "Wave C",
+    hype: "SENDING",
     gap: 0,
   },
 ];

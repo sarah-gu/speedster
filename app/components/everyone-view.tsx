@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { type Runner, pointAtMile, RACE_START_EPOCH } from '@/lib/race-data';
+import { type Runner, pointAtMile, RACE_START_EPOCH, WAVE_OFFSETS, WAVE_LABELS } from '@/lib/race-data';
 import { FF, LiveDot, TickNumber, HypeBadge, Confetti, StarButton } from './race-shared';
 import { GlobalElevation } from './race-elevation';
 
@@ -152,7 +152,31 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed
   const visible = runners.filter(r => !unstarred.has(r.id));
   const hidden = runners.filter(r => unstarred.has(r.id));
   const liveCount = visible.filter(r => r.status === 'running').length;
-  const sorted = [...visible].sort((a, b) => b.mile - a.mile);
+
+  const onCourse = visible
+    .filter(r => r.status !== 'pre')
+    .sort((a, b) => b.mile - a.mile);
+
+  const preRaceCorrals = Array.from(new Set(
+    visible.filter(r => r.status === 'pre').map(r => r.corral)
+  )).sort((a, b) => (WAVE_OFFSETS[a] ?? 0) - (WAVE_OFFSETS[b] ?? 0));
+
+  const waveGroups = preRaceCorrals.map(corral => ({
+    corral,
+    label: WAVE_LABELS[corral] ?? '',
+    runners: visible.filter(r => r.status === 'pre' && r.corral === corral),
+  }));
+
+  const sections: { key: string; title: string; runners: Runner[] }[] = [
+    ...(onCourse.length > 0 ? [{ key: 'on-course', title: 'ON COURSE', runners: onCourse }] : []),
+    ...waveGroups.map(g => ({
+      key: g.corral,
+      title: `${g.corral.toUpperCase()}${g.label ? ` · ${g.label}` : ''}`,
+      runners: g.runners,
+    })),
+  ];
+
+  let rankCounter = 0;
 
   const [remaining, setRemaining] = useState(0);
   useEffect(() => {
@@ -250,21 +274,40 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed
           CREW · {visible.length}
         </div>
         <div style={{ fontFamily: FF.mono, fontSize: 9, color: '#1a181680', letterSpacing: '0.06em' }}>
-          SORTED · BY POS
+          GROUPED · BY WAVE
         </div>
       </div>
 
       {/* Scrollable runner list */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {sorted.map((r, i) => (
-          <SlimRunnerRow
-            key={r.id}
-            runner={r}
-            rank={i + 1}
-            starred={!unstarred.has(r.id)}
-            onToggleStar={onToggleStar}
-            onOpen={onOpen}
-          />
+        {sections.map(section => (
+          <div key={section.key}>
+            <div style={{
+              padding: '14px 16px 6px',
+              fontFamily: FF.label, fontSize: 10, fontWeight: 800,
+              letterSpacing: '0.16em', color: '#1a181699',
+              fontStyle: 'italic',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+            }}>
+              <span>{section.title}</span>
+              <span style={{ fontFamily: FF.mono, fontSize: 9, color: '#1a18164d', letterSpacing: '0.08em' }}>
+                {section.runners.length}
+              </span>
+            </div>
+            {section.runners.map(r => {
+              rankCounter += 1;
+              return (
+                <SlimRunnerRow
+                  key={r.id}
+                  runner={r}
+                  rank={rankCounter}
+                  starred={!unstarred.has(r.id)}
+                  onToggleStar={onToggleStar}
+                  onOpen={onOpen}
+                />
+              );
+            })}
+          </div>
         ))}
 
         {/* Hidden runners — quick re-star */}
