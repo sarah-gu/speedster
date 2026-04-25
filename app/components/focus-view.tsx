@@ -8,6 +8,7 @@ import {
   nextLandmarkPass,
   etaSecondsToMile,
   parsePaceSec,
+  pickHype,
 } from '@/lib/race-data';
 import { FF, LiveDot, TickNumber, HypeBadge, RaceStripe, formatEta, Confetti } from './race-shared';
 import { ElevationFull } from './race-elevation';
@@ -117,10 +118,11 @@ function TabButton({ active, onClick, children }: {
   );
 }
 
-export function FocusView({ runner, onBack, elapsed }: {
+export function FocusView({ runner, onBack, elapsed, hypeSeed }: {
   runner: Runner;
   onBack: () => void;
   elapsed: string;
+  hypeSeed: number;
 }) {
   const [tab, setTab] = useState<'map' | 'elev'>('elev');
   const [cheers, setCheers] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -210,7 +212,7 @@ export function FocusView({ runner, onBack, elapsed }: {
                 {runner.last}
               </div>
               <div style={{ marginTop: 12 }}>
-                <HypeBadge label={runner.hype} tone="dark" />
+                <HypeBadge label={pickHype(runner, hypeSeed)} tone="dark" />
               </div>
             </div>
             <Bib runner={runner} />

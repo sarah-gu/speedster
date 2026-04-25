@@ -14,7 +14,13 @@ export function RaceApp() {
   const [confettiBursts, setConfettiBursts] = useState<{ key: number; id: string }[]>([]);
   const burstIdRef = useRef(0);
   const [unstarred, setUnstarred] = useState<Set<string>>(new Set());
+  const [hypeSeed, setHypeSeed] = useState(0);
   const prevRunnersRef = useRef<Runner[]>(INITIAL_RUNNERS);
+
+  // Roll a fresh hype seed once per page load (in effect to avoid SSR mismatch).
+  useEffect(() => {
+    setHypeSeed(Math.floor(Math.random() * 1_000_000));
+  }, []);
 
   // Load starred state from localStorage on mount
   useEffect(() => {
@@ -100,6 +106,7 @@ export function RaceApp() {
           onOpen={r => setFocusId(r.id)}
           elapsed={elapsed}
           confettiBursts={confettiBursts}
+          hypeSeed={hypeSeed}
         />
       </div>
 
@@ -112,6 +119,7 @@ export function RaceApp() {
             runner={focused}
             onBack={() => setFocusId(null)}
             elapsed={elapsed}
+            hypeSeed={hypeSeed}
           />
         </div>
       )}

@@ -186,6 +186,69 @@ export function parsePaceSec(pace: string) {
   return m * 60 + s;
 }
 
+// Dynamic hype-tag pools, picked by phase + pace.
+export const HYPE_POOLS = {
+  pre: [
+    "BIB ON", "CAFFEINATED", "GU LOADED", "STRETCHING", "MENTAL REPS",
+    "TOEING LINE", "PLAYLIST UP", "HYDRATING", "READY", "WARMING UP",
+    "ANTHEM TIME", "SHAKING IT OUT",
+  ],
+  early: [
+    "FRESH LEGS", "FINDING PACE", "EASY DOES IT", "FIRST GEAR",
+    "ROLLING", "WARMED UP", "SETTLED IN", "FEELING IT",
+  ],
+  mid: [
+    "LOCKED IN", "DIALED IN", "IN THE ZONE", "EATING MILES",
+    "GRINDING", "FLOW STATE", "STEADY", "ON CRUISE", "JUST VIBES",
+  ],
+  late: [
+    "KICK MODE", "DIGGING DEEP", "FULL SEND", "FINAL BOSS",
+    "PAIN CAVE", "HOMESTRETCH", "ON FUMES", "ALL IN", "ALMOST THERE",
+  ],
+  fast: [
+    "FLYING", "RIPPING", "ON ONE", "GAS", "SUB-7", "ZOOMIN",
+  ],
+  chill: [
+    "ZEN MODE", "EASY MILES", "CRUISIN", "SAVING IT", "VIBES ONLY",
+  ],
+  finished: [
+    "DONE", "MEDAL'D", "BAGEL TIME", "ICED OUT", "CRUSHED IT",
+    "13.1 ✓", "BEER ME", "PIZZA TIME",
+  ],
+} as const;
+
+function hashId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h * 31) + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+// Pick a hype tag for a runner based on their current state.
+// `sessionSeed` is a per-page-load random; combined with the runner id, it gives
+// stable-per-session, varied-per-runner, fresh-on-reload selections.
+export function pickHype(runner: Runner, sessionSeed: number): string {
+  let pool: readonly string[];
+  if (runner.status === "pre") {
+    pool = HYPE_POOLS.pre;
+  } else if (runner.status === "finished") {
+    pool = HYPE_POOLS.finished;
+  } else {
+    const paceSec = parsePaceSec(runner.pace);
+    if (isFinite(paceSec) && paceSec > 0 && paceSec < 7 * 60 + 30) {
+      pool = HYPE_POOLS.fast;
+    } else if (isFinite(paceSec) && paceSec > 9 * 60 + 30) {
+      pool = HYPE_POOLS.chill;
+    } else if (runner.mile < 4) {
+      pool = HYPE_POOLS.early;
+    } else if (runner.mile >= 10) {
+      pool = HYPE_POOLS.late;
+    } else {
+      pool = HYPE_POOLS.mid;
+    }
+  }
+  return pool[(hashId(runner.id) + sessionSeed) % pool.length];
+}
+
 export function formatElapsed(seconds: number) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -201,6 +264,9 @@ export type RunnerConfig = {
   corral: string;
   hype: string;
   gap: number;
+  // Force a display name regardless of what RTRT returns for the bib.
+  // Use when someone runs under a bib registered to a different person.
+  nameOverride?: { first: string; last: string };
 };
 
 export const CREW: RunnerConfig[] = [
@@ -267,6 +333,8 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "GOING",
     gap: 0,
+    // Bib registered to Steve Li; Animesh is running in Steve's place.
+    nameOverride: { first: "Animesh", last: "Joshi" },
   },
   {
     id: "lucas",
@@ -292,13 +360,29 @@ export const CREW: RunnerConfig[] = [
     hype: "SENDING",
     gap: 0,
   },
+  {
+    id: "jiahua",
+    bib: 8673,
+    color: "#b85a2e",
+    corral: "Wave A",
+    hype: "LOCKED IN",
+    gap: 0,
+  },
+  {
+    id: "ellen",
+    bib: 8672,
+    color: "#854020",
+    corral: "Wave A",
+    hype: "GOING",
+    gap: 0,
+  },
 ];
 
 export function configToRunner(
   c: RunnerConfig,
   overrides: Partial<Runner> = {},
 ): Runner {
-  return {
+  const runner: Runner = {
     id: c.id,
     name: "",
     last: "",
@@ -314,6 +398,11 @@ export function configToRunner(
     splits: [],
     ...overrides,
   };
+  if (c.nameOverride) {
+    runner.name = c.nameOverride.first;
+    runner.last = c.nameOverride.last;
+  }
+  return runner;
 }
 
 export const INITIAL_RUNNERS: Runner[] = CREW.map((c) => configToRunner(c));

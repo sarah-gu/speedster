@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { type Runner, pointAtMile, RACE_START_EPOCH, WAVE_OFFSETS, WAVE_LABELS } from '@/lib/race-data';
+import { type Runner, pointAtMile, RACE_START_EPOCH, WAVE_OFFSETS, WAVE_LABELS, pickHype } from '@/lib/race-data';
 import { FF, LiveDot, TickNumber, HypeBadge, Confetti, StarButton } from './race-shared';
 import { GlobalElevation } from './race-elevation';
 
@@ -52,12 +52,13 @@ function CountdownDigits({ remaining }: { remaining: number }) {
   );
 }
 
-function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen }: {
+function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen, hypeSeed }: {
   runner: Runner;
   rank: number;
   starred: boolean;
   onToggleStar: (id: string) => void;
   onOpen: (r: Runner) => void;
+  hypeSeed: number;
 }) {
   return (
     <div
@@ -125,7 +126,7 @@ function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen }: {
           fontFamily: FF.mono, fontSize: 10, fontWeight: 600,
           color: '#1a181699', whiteSpace: 'nowrap',
         }}>
-          <HypeBadge label={runner.hype} />
+          <HypeBadge label={pickHype(runner, hypeSeed)} />
           <span>{runner.pace}/mi</span>
           <span style={{ color: '#1a18162e' }}>·</span>
           <span>→{runner.projected.replace(' ', '')}</span>
@@ -141,13 +142,14 @@ function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen }: {
   );
 }
 
-export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed, confettiBursts }: {
+export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed, confettiBursts, hypeSeed }: {
   runners: Runner[];
   unstarred: Set<string>;
   onToggleStar: (id: string) => void;
   onOpen: (r: Runner) => void;
   elapsed: string;
   confettiBursts: { key: number; id: string }[];
+  hypeSeed: number;
 }) {
   const visible = runners.filter(r => !unstarred.has(r.id));
   const hidden = runners.filter(r => unstarred.has(r.id));
@@ -304,6 +306,7 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed
                   starred={!unstarred.has(r.id)}
                   onToggleStar={onToggleStar}
                   onOpen={onOpen}
+                  hypeSeed={hypeSeed}
                 />
               );
             })}
