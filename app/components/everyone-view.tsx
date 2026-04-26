@@ -142,11 +142,12 @@ function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen, hypeSeed }
   );
 }
 
-export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed, confettiBursts, hypeSeed }: {
+export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, onEdit, elapsed, confettiBursts, hypeSeed }: {
   runners: Runner[];
   unstarred: Set<string>;
   onToggleStar: (id: string) => void;
   onOpen: (r: Runner) => void;
+  onEdit: () => void;
   elapsed: string;
   confettiBursts: { key: number; id: string }[];
   hypeSeed: number;
@@ -347,7 +348,7 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, elapsed
 
         {/* Edit crew footer */}
         <div style={{ padding: '16px 20px 28px', textAlign: 'center' }}>
-          <button style={{
+          <button onClick={onEdit} style={{
             background: 'transparent', border: '1.5px solid #1a181622',
             padding: '10px 18px', borderRadius: 999,
             fontFamily: FF.label, fontSize: 11, fontWeight: 700,

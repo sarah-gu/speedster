@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { INITIAL_RUNNERS, RACE_START_EPOCH, formatElapsed, type Runner } from '@/lib/race-data';
 import { EveryoneView } from './everyone-view';
 import { FocusView } from './focus-view';
+import { EditCrewView } from './edit-crew-view';
 
 const STAR_STORAGE_KEY = 'speedster:unstarred';
 
@@ -15,6 +16,7 @@ export function RaceApp() {
   const burstIdRef = useRef(0);
   const [unstarred, setUnstarred] = useState<Set<string>>(new Set());
   const [hypeSeed, setHypeSeed] = useState(0);
+  const [editing, setEditing] = useState(false);
   const prevRunnersRef = useRef<Runner[]>(INITIAL_RUNNERS);
 
   // Roll a fresh hype seed once per page load (in effect to avoid SSR mismatch).
@@ -45,6 +47,19 @@ export function RaceApp() {
       return next;
     });
   };
+
+  const starAll = () => setUnstarred(new Set());
+  const clearAll = () => setUnstarred(new Set(runners.map(r => r.id)));
+  const starCorral = (corral: string) => setUnstarred(prev => {
+    const next = new Set(prev);
+    runners.filter(r => r.corral === corral).forEach(r => next.delete(r.id));
+    return next;
+  });
+  const unstarCorral = (corral: string) => setUnstarred(prev => {
+    const next = new Set(prev);
+    runners.filter(r => r.corral === corral).forEach(r => next.add(r.id));
+    return next;
+  });
 
   // Drive elapsed time from wall clock
   useEffect(() => {
@@ -94,16 +109,17 @@ export function RaceApp() {
     <div style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden', background: '#1a1816' }}>
       <div style={{
         position: 'absolute', inset: 0,
-        transform: focused ? 'translateX(-30%)' : 'translateX(0)',
-        opacity: focused ? 0.4 : 1,
+        transform: (focused || editing) ? 'translateX(-30%)' : 'translateX(0)',
+        opacity: (focused || editing) ? 0.4 : 1,
         transition: 'transform 280ms cubic-bezier(.2,.8,.2,1), opacity 280ms cubic-bezier(.2,.8,.2,1)',
-        pointerEvents: focused ? 'none' : 'auto',
+        pointerEvents: (focused || editing) ? 'none' : 'auto',
       }}>
         <EveryoneView
           runners={runners}
           unstarred={unstarred}
           onToggleStar={toggleStar}
           onOpen={r => setFocusId(r.id)}
+          onEdit={() => setEditing(true)}
           elapsed={elapsed}
           confettiBursts={confettiBursts}
           hypeSeed={hypeSeed}
@@ -120,6 +136,24 @@ export function RaceApp() {
             onBack={() => setFocusId(null)}
             elapsed={elapsed}
             hypeSeed={hypeSeed}
+          />
+        </div>
+      )}
+
+      {editing && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          animation: 'rd-slide-in 280ms cubic-bezier(.2,.8,.2,1) both',
+        }}>
+          <EditCrewView
+            runners={runners}
+            unstarred={unstarred}
+            onToggleStar={toggleStar}
+            onStarAll={starAll}
+            onClearAll={clearAll}
+            onStarCorral={starCorral}
+            onUnstarCorral={unstarCorral}
+            onBack={() => setEditing(false)}
           />
         </div>
       )}

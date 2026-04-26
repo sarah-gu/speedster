@@ -66,7 +66,9 @@ export function StarButton({ starred, onClick, size = 36, tone = 'light' }: {
   size?: number;
   tone?: 'light' | 'dark';
 }) {
-  const color = tone === 'light' ? '#fff' : '#1a1816';
+  const baseColor = tone === 'light' ? '#fff' : '#1a1816';
+  const color = starred ? 'var(--accent)' : baseColor;
+  const borderAlpha = starred ? '88' : '55';
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
@@ -75,10 +77,10 @@ export function StarButton({ starred, onClick, size = 36, tone = 'light' }: {
         width: size, height: size, borderRadius: 999,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         background: 'transparent',
-        border: `1.5px solid ${color}55`,
+        border: `1.5px solid ${starred ? 'var(--accent)' : `${baseColor}${borderAlpha}`}`,
         color, cursor: 'pointer', padding: 0,
         fontSize: Math.round(size * 0.5), lineHeight: 1,
-        transition: 'transform 120ms ease, background 160ms ease',
+        transition: 'transform 120ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease',
       }}
     >
       <span style={{ transform: starred ? 'scale(1.1)' : 'scale(1)' }}>
