@@ -10,6 +10,9 @@ export type Runner = {
   mile: number;
   pace: string;
   projected: string;
+  // Projected net (chip-to-chip) finish time, e.g. "1:50:35". '—' before any
+  // mat crossing or when we can't infer it.
+  projectedElapsed: string;
   gap: number;
   status: "pre" | "running" | "finished";
   hype: string;
@@ -256,6 +259,15 @@ export function formatElapsed(seconds: number) {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+export function formatTimeOfDay(epochSec: number): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(epochSec * 1000));
+}
+
 // Static config — name / pace / projected / mile / splits / status come from the live API
 export type RunnerConfig = {
   id: string;
@@ -264,6 +276,9 @@ export type RunnerConfig = {
   corral: string;
   hype: string;
   gap: number;
+  // Pre-race target pace ("M:SS" per mile) used to estimate mile/projected
+  // before the runner has crossed any timing mat with pace data.
+  defaultPace: string;
   // Force a display name regardless of what RTRT returns for the bib.
   // Use when someone runs under a bib registered to a different person.
   nameOverride?: { first: string; last: string };
@@ -277,6 +292,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "GOING",
     gap: 0,
+    defaultPace: "11:00",
   },
   {
     id: "theodore",
@@ -285,6 +301,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "DIALED IN",
     gap: 0,
+    defaultPace: "7:30",
   },
   {
     id: "mandi",
@@ -293,6 +310,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "SENDING",
     gap: 0,
+    defaultPace: "11:00",
   },
   {
     id: "janet",
@@ -301,6 +319,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "LOCKED IN",
     gap: 0,
+    defaultPace: "10:30",
   },
   {
     id: "kimberly",
@@ -309,6 +328,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave C",
     hype: "CRUISING",
     gap: 0,
+    defaultPace: "9:30",
   },
   {
     id: "kevin",
@@ -317,6 +337,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "SENDING",
     gap: 0,
+    defaultPace: "10:30",
   },
   {
     id: "jess",
@@ -325,6 +346,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "DIALED IN",
     gap: 0,
+    defaultPace: "9:30",
   },
   {
     id: "animesh",
@@ -333,6 +355,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave D",
     hype: "GOING",
     gap: 0,
+    defaultPace: "10:00",
     // Bib registered to Steve Li; Animesh is running in Steve's place.
     nameOverride: { first: "Animesh", last: "Joshi" },
   },
@@ -343,6 +366,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "DIALED IN",
     gap: 0,
+    defaultPace: "8:00",
   },
   {
     id: "angeline",
@@ -351,6 +375,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "CRUISING",
     gap: 0,
+    defaultPace: "8:00",
   },
   {
     id: "evan",
@@ -359,6 +384,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave C",
     hype: "SENDING",
     gap: 0,
+    defaultPace: "9:30",
   },
   {
     id: "jiahua",
@@ -367,6 +393,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "LOCKED IN",
     gap: 0,
+    defaultPace: "8:00",
   },
   {
     id: "ellen",
@@ -375,6 +402,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "GOING",
     gap: 0,
+    defaultPace: "8:00",
   },
   {
     id: "puhua",
@@ -383,6 +411,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "GOING",
     gap: 0,
+    defaultPace: "8:00",
   },
   {
     id: "neeyanth",
@@ -391,6 +420,7 @@ export const CREW: RunnerConfig[] = [
     corral: "Wave A",
     hype: "DIALED IN",
     gap: 0,
+    defaultPace: "8:00",
   },
 ];
 
@@ -408,6 +438,7 @@ export function configToRunner(
     mile: 0,
     pace: "—",
     projected: "—",
+    projectedElapsed: "—",
     gap: c.gap,
     status: "pre",
     hype: c.hype,

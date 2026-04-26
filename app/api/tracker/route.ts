@@ -1,4 +1,14 @@
-import { CREW, configToRunner, type Runner, type RunnerConfig } from '@/lib/race-data';
+import {
+  CREW,
+  RACE_START_EPOCH,
+  WAVE_OFFSETS,
+  configToRunner,
+  formatElapsed,
+  formatTimeOfDay,
+  parsePaceSec,
+  type Runner,
+  type RunnerConfig,
+} from '@/lib/race-data';
 import { mapSplits } from '@/lib/rtrt-parse';
 
 // --- Token cache (module scope, persists across requests in same server process) ---
@@ -39,11 +49,81 @@ async function fetchLiveRunner(config: RunnerConfig, appId: string, eventId: str
   const points = splitsData?.error ? [] : (splitsData?.list ?? []);
   const live = mapSplits(points);
 
+  const estimated = projectRunner(config, live);
+
   return configToRunner(config, {
     name: profile.fname ?? '',
     last: profile.lname ?? '',
-    ...live,
+    ...estimated,
   });
+}
+
+// RTRT only publishes splits at chip mats. Between mats — and before the
+// first mat — extrapolate the current mile from (lastKnownMile, lastKnownTime,
+// pace). Pace is the latest split's milePaceAvg if available, otherwise the
+// runner's pre-race default. Projected finish prefers RTRT's etfp when present
+// and falls back to a same-pace projection.
+function projectRunner(
+  config: RunnerConfig,
+  live: ReturnType<typeof mapSplits>,
+): Pick<Runner, 'mile' | 'pace' | 'projected' | 'projectedElapsed' | 'splits' | 'status'> {
+  const waveGunEpoch = RACE_START_EPOCH + (WAVE_OFFSETS[config.corral] ?? 0);
+  const nowSec = Date.now() / 1000;
+
+  // Already finished — trust the real data.
+  if (live.status === 'finished') {
+    return {
+      mile: live.mile,
+      pace: live.pace,
+      projected: live.projected,
+      projectedElapsed: live.projectedElapsed,
+      splits: live.splits,
+      status: 'finished',
+    };
+  }
+
+  // Pre-race OR no chip read at any mat (including START) — don't fabricate
+  // progress. A wave-gun timestamp doesn't prove the runner actually crossed
+  // the start mat; treat as 'pre' until RTRT confirms a crossing.
+  if (nowSec < waveGunEpoch || live.lastEpoch === undefined) {
+    return { mile: 0, pace: '—', projected: '—', projectedElapsed: '—', splits: live.splits, status: 'pre' };
+  }
+
+  const hasRealPace = live.pace !== '—';
+  const paceStr = hasRealPace ? live.pace : config.defaultPace;
+  const paceSec = parsePaceSec(paceStr);
+
+  const baselineEpoch = live.lastEpoch;
+  const baselineMile = live.mile;
+
+  let estMile = baselineMile;
+  if (Number.isFinite(paceSec) && paceSec > 0) {
+    const extra = Math.max(0, nowSec - baselineEpoch) / paceSec;
+    estMile = Math.min(13.1, baselineMile + extra);
+  }
+  // Round to one decimal place for display stability.
+  estMile = Math.round(estMile * 10) / 10;
+
+  let projected = live.projected;
+  let projectedElapsed = live.projectedElapsed;
+  if (projected === '—' && Number.isFinite(paceSec) && paceSec > 0) {
+    const projectedFinishEpoch = baselineEpoch + (13.1 - baselineMile) * paceSec;
+    projected = formatTimeOfDay(projectedFinishEpoch);
+    // We can compute net time only when baselineEpoch IS the START crossing
+    // (baselineMile === 0). Otherwise the cumulative split time isn't in scope.
+    if (projectedElapsed === '—' && baselineMile === 0) {
+      projectedElapsed = formatElapsed(13.1 * paceSec);
+    }
+  }
+
+  return {
+    mile: estMile,
+    pace: paceStr,
+    projected,
+    projectedElapsed,
+    splits: live.splits,
+    status: estMile >= 13.1 ? 'finished' : 'running',
+  };
 }
 
 // --- Mock data: synthetic mid-race state for offline UI testing ---

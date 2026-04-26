@@ -37,9 +37,10 @@ function Bib({ runner }: { runner: Runner }) {
   );
 }
 
-function StatCell({ label, value, flash = false }: {
+function StatCell({ label, value, subtitle, flash = false }: {
   label: string;
   value: string;
+  subtitle?: string;
   flash?: boolean;
 }) {
   return (
@@ -56,6 +57,14 @@ function StatCell({ label, value, flash = false }: {
       }}>
         {flash ? <TickNumber value={value} /> : value}
       </div>
+      {subtitle && (
+        <div style={{
+          fontFamily: FF.mono, fontSize: 11, fontWeight: 600,
+          color: '#1a181677', marginTop: 3, letterSpacing: '0.02em',
+        }}>
+          {subtitle}
+        </div>
+      )}
     </div>
   );
 }
@@ -322,7 +331,12 @@ export function FocusView({ runner, onBack, elapsed, hypeSeed }: {
         }}>
           <StatCell label="CURRENT PACE" value={runner.pace} flash />
           <div style={{ width: 1, background: '#1a181614', margin: '0 8px' }} />
-          <StatCell label="PROJECTED" value={runner.projected} flash />
+          <StatCell
+            label="PROJECTED"
+            value={runner.projected}
+            subtitle={runner.projectedElapsed !== '—' ? runner.projectedElapsed : undefined}
+            flash
+          />
           <div style={{ width: 1, background: '#1a181614', margin: '0 8px' }} />
           <StatCell label="VS PR" value={runner.gap >= 0 ? `+${runner.gap}s` : `${runner.gap}s`} />
         </div>

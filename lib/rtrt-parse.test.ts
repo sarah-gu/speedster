@@ -57,10 +57,16 @@ describe('formatProjected', () => {
     expect(formatProjected('')).toBe('—');
   });
 
-  test('already AM/PM passes through unchanged', () => {
+  test('already AM/PM passes through, lowercase normalized to upper', () => {
     expect(formatProjected('9:05 AM')).toBe('9:05 AM');
     expect(formatProjected('1:45 PM')).toBe('1:45 PM');
-    expect(formatProjected('12:00 pm')).toBe('12:00 pm');
+    expect(formatProjected('12:00 pm')).toBe('12:00 PM');
+  });
+
+  test('RTRT tilde-separated format: takes last segment as time of day', () => {
+    // Real RTRT etfp shape: "LABEL~ELAPSED~TIME_OF_DAY"
+    expect(formatProjected('FINISH~01:38:31~9:07 am')).toBe('9:07 AM');
+    expect(formatProjected('10K~00:40:30~7:40 am')).toBe('7:40 AM');
   });
 
   test('converts 24-hour time to 12-hour AM/PM', () => {
@@ -90,7 +96,7 @@ describe('formatProjected', () => {
 describe('mapSplits', () => {
   test('empty array → pre-race placeholder', () => {
     expect(mapSplits([])).toEqual({
-      mile: 0, pace: '—', projected: '—', splits: [], status: 'pre',
+      mile: 0, pace: '—', projected: '—', projectedElapsed: '—', splits: [], status: 'pre',
     });
   });
 

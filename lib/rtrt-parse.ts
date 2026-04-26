@@ -14,9 +14,15 @@ export function parseMileFromLabel(label: string): number | null {
 
 export function formatProjected(etfp: string): string {
   if (!etfp) return '—';
-  if (/AM|PM/i.test(etfp)) return etfp;
-  const match = etfp.match(/^(\d+):(\d{2})/);
-  if (!match) return etfp;
+  // RTRT etfp format is "LABEL~ELAPSED~TIME_OF_DAY", e.g. "FINISH~01:38:31~9:07 am".
+  // Take the last tilde segment as the time of day.
+  const segments = String(etfp).split('~');
+  const last = segments[segments.length - 1].trim();
+  if (/AM|PM/i.test(last)) {
+    return last.replace(/\s*am\s*$/i, ' AM').replace(/\s*pm\s*$/i, ' PM');
+  }
+  const match = last.match(/^(\d+):(\d{2})/);
+  if (!match) return last;
   let h = parseInt(match[1], 10);
   const m = match[2];
   const ampm = h >= 12 ? 'PM' : 'AM';
@@ -25,17 +31,38 @@ export function formatProjected(etfp: string): string {
   return `${h}:${m} ${ampm}`;
 }
 
-type LiveFields = Pick<Runner, 'mile' | 'pace' | 'projected' | 'splits' | 'status'>;
+type LiveFields = Pick<Runner, 'mile' | 'pace' | 'projected' | 'projectedElapsed' | 'splits' | 'status'> & {
+  // Epoch (seconds) of the most recent timing-mat crossing, including START.
+  // Used downstream to extrapolate current mile by elapsed-since-cross.
+  lastEpoch?: number;
+};
+
+// "01:50:35" → "1:50:35"; pass-through if shape isn't H:MM:SS.
+function trimLeadingZero(t: string): string {
+  return t.replace(/^0+(?=\d)/, '');
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapSplits(points: any[]): LiveFields {
   if (points.length === 0) {
-    return { mile: 0, pace: '—', projected: '—', splits: [], status: 'pre' };
+    return { mile: 0, pace: '—', projected: '—', projectedElapsed: '—', splits: [], status: 'pre' };
   }
   const last = points[points.length - 1];
   const mile = parseMileFromLabel(last.label ?? '') ?? 0;
-  const pace: string = last?.milePace ?? last?.pace ?? '—';
-  const projected = last?.etfp ? formatProjected(String(last.etfp)) : '—';
+  // Prefer cumulative average over instantaneous segment pace — more stable for
+  // projection and matches what the official app surfaces as "current pace".
+  const pace: string = last?.milePaceAvg ?? last?.milePace ?? last?.pace ?? '—';
+  // Falsy etfp (undefined / '' / 0) is treated as "no projection".
+  const etfpStr = last?.etfp ? String(last.etfp) : '';
+  const projected = etfpStr ? formatProjected(etfpStr) : '—';
+  // RTRT etfp shape is "LABEL~ELAPSED~TIME_OF_DAY"; the middle segment is the
+  // projected net (chip-to-chip) finish time.
+  const etfpSegments = etfpStr.split('~');
+  const projectedElapsed = etfpSegments.length >= 3
+    ? trimLeadingZero(etfpSegments[1].trim())
+    : '—';
+  const lastEpochRaw = last?.epochTime;
+  const lastEpoch = lastEpochRaw != null ? Number(lastEpochRaw) : undefined;
 
   const splits: Split[] = points
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,5 +74,8 @@ export function mapSplits(points: any[]): LiveFields {
     .filter((s): s is Split => s !== null);
 
   const status: Runner['status'] = mile >= 13.1 ? 'finished' : 'running';
-  return { mile, pace, projected, splits, status };
+  return {
+    mile, pace, projected, projectedElapsed, splits, status,
+    lastEpoch: Number.isFinite(lastEpoch) ? lastEpoch : undefined,
+  };
 }
