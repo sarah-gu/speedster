@@ -5,6 +5,15 @@ import { type Runner, pointAtMile, RACE_START_EPOCH, WAVE_OFFSETS, WAVE_LABELS, 
 import { FF, LiveDot, TickNumber, HypeBadge, Confetti, StarButton } from './race-shared';
 import { GlobalElevation } from './race-elevation';
 
+// "H:MM:SS" → seconds. Returns Infinity for unparseable / em-dash so those
+// rows sort to the bottom of a fastest-first list.
+function parseElapsedSec(t: string): number {
+  const parts = t.split(':').map(Number);
+  if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return Infinity;
+  const [h, m, s] = parts;
+  return h * 3600 + m * 60 + s;
+}
+
 function CountdownDigits({ remaining }: { remaining: number }) {
   const days = Math.floor(remaining / 86400);
   const hrs = Math.floor((remaining % 86400) / 3600);
@@ -128,8 +137,12 @@ function SlimRunnerRow({ runner, rank, starred, onToggleStar, onOpen, hypeSeed }
         }}>
           <HypeBadge label={pickHype(runner, hypeSeed)} />
           <span>{runner.pace}/mi</span>
-          <span style={{ color: '#1a18162e' }}>·</span>
-          <span>→{runner.projected.replace(' ', '')}</span>
+          {runner.projectedElapsed !== '—' && (
+            <>
+              <span style={{ color: '#1a18162e' }}>·</span>
+              <span>{runner.projectedElapsed}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -156,9 +169,11 @@ export function EveryoneView({ runners, unstarred, onToggleStar, onOpen, onEdit,
   const hidden = runners.filter(r => unstarred.has(r.id));
   const liveCount = visible.filter(r => r.status === 'running').length;
 
+  // Fastest projected (or actual) finish time first; rows without a time
+  // sort to the bottom via parseElapsedSec returning Infinity.
   const onCourse = visible
     .filter(r => r.status !== 'pre')
-    .sort((a, b) => b.mile - a.mile);
+    .sort((a, b) => parseElapsedSec(a.projectedElapsed) - parseElapsedSec(b.projectedElapsed));
 
   const preRaceCorrals = Array.from(new Set(
     visible.filter(r => r.status === 'pre').map(r => r.corral)

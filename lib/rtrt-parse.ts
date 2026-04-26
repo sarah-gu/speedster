@@ -42,6 +42,18 @@ function trimLeadingZero(t: string): string {
   return t.replace(/^0+(?=\d)/, '');
 }
 
+// "01:59:28.75" → "1:59:28": drop fractional seconds + leading zero.
+function formatNetTime(t: string): string {
+  return trimLeadingZero(t.split('.')[0]);
+}
+
+// True when a split represents the finish line, regardless of which signal
+// RTRT happens to set on a given event.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isFinishPoint(p: any): boolean {
+  return String(p?.isFinish ?? '') === '1' || /finish/i.test(String(p?.label ?? ''));
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapSplits(points: any[]): LiveFields {
   if (points.length === 0) {
@@ -56,11 +68,15 @@ export function mapSplits(points: any[]): LiveFields {
   const etfpStr = last?.etfp ? String(last.etfp) : '';
   const projected = etfpStr ? formatProjected(etfpStr) : '—';
   // RTRT etfp shape is "LABEL~ELAPSED~TIME_OF_DAY"; the middle segment is the
-  // projected net (chip-to-chip) finish time.
+  // projected net (chip-to-chip) finish time. RTRT drops etfp on the FINISH
+  // split itself — fall back to the FINISH point's netTime for actual time.
   const etfpSegments = etfpStr.split('~');
-  const projectedElapsed = etfpSegments.length >= 3
-    ? trimLeadingZero(etfpSegments[1].trim())
-    : '—';
+  let projectedElapsed = '—';
+  if (etfpSegments.length >= 3) {
+    projectedElapsed = trimLeadingZero(etfpSegments[1].trim());
+  } else if (isFinishPoint(last) && last?.netTime) {
+    projectedElapsed = formatNetTime(String(last.netTime));
+  }
   const lastEpochRaw = last?.epochTime;
   const lastEpoch = lastEpochRaw != null ? Number(lastEpochRaw) : undefined;
 
